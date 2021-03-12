@@ -1,0 +1,68 @@
+stages:
+  - phpunit
+  - sonarqube
+
+phpunit:
+  stage: phpunit
+  image:
+    name: php:8.0
+  before_script:
+    - apt-get update -yqq
+    - apt-get install git unzip -yqq
+    - php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+    - php composer-setup.php --install-dir=/usr/bin --filename=composer --version=2.0.11
+    - php -r "unlink('composer-setup.php');"
+    - pecl install xdebug-3.0.0
+    - docker-php-ext-enable xdebug
+  cache:
+    key: ${CI_JOB_NAME}
+    paths:
+      - vendor
+  variables:
+    XDEBUG_MODE: "coverage"
+  script:
+    - composer install
+    - |
+      ./vendor/bin/phpunit \
+        --whitelist src/Domain \
+        --log-junit build/phpunit.xml \
+        --coverage-text \
+        --coverage-clover build/coverage.xml \
+        --colors=never \
+          tests
+  artifacts:
+    paths:
+      - build
+    reports:
+      junit: build/phpunit.xml
+    expire_in: 30 min
+  only:
+    - merge_requests
+    - master
+
+sonarqube:
+  stage: sonarqube
+  image:
+    name: sonarsource/sonar-scanner-cli:4.6
+    entrypoint: [""]
+  variables:
+    IP_SONAR_MACHINE: "10.1.1.1"
+  cache:
+    key: "${CI_JOB_NAME}"
+    paths:
+      - .sonar/cache
+      - .scannerwork
+  script:
+    - |
+      sonar-scanner \
+        -Dsonar.language=php \
+        -Dsonar.qualitygate.wait=true \
+        -Dsonar.sources=src/Domain \
+        -Dsonar.host.url=http://${IP_SONAR_MACHINE}:9000 \
+        -Dsonar.php.tests.reportPath=build/phpunit.xml \
+        -Dsonar.php.coverage.reportPaths=build/coverage.xml \
+        -Dsonar.projectKey=demo-php-code-quality-testing-sonar-gitlab-ci \
+        -Dsonar.login=69dd65b4abb7fbd11ff3c05b03eef80bfe191743
+  only:
+    - merge_requests
+    - master

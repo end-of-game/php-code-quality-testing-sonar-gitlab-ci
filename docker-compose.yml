@@ -1,0 +1,67 @@
+version: "3.8"
+services:
+  sonar:
+    image: sonarqube:8.7.0-community
+    environment:
+      SONARQUBE_JDBC_URL: jdbc:postgresql://db:5432/sonarDbName
+      SONARQUBE_JDBC_USERNAME: sonarDbUsername
+      SONARQUBE_JDBC_PASSWORD: sonarDbPassword
+    ports:
+      - 9000:9000
+    volumes:
+      - sonarqube_bundled-plugins:/opt/sonarqube/lib/bundled-plugins
+      - sonarqube_conf:/opt/sonarqube/conf
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+  db:
+    image: postgres:13.2
+    environment:
+      POSTGRES_USER: sonarDbUsername
+      POSTGRES_PASSWORD: sonarDbPassword
+      POSTGRES_DB: sonarDbName
+    ports:
+      - 5432:5432
+    volumes:
+      - postgresql:/var/lib/postgresql
+      - postgresql_data:/var/lib/postgresql/data
+  gitlab:
+    image: gitlab/gitlab-ce:13.7.1-ce.0
+    environment:
+      GITLAB_OMNIBUS_CONFIG: "from_file('/omnibus_config.rb')"
+    ports:
+      - 22:22
+      - 443:443
+      - 80:80
+    configs:
+      - source: gitlab
+        target: /omnibus_config.rb
+    secrets:
+      - gitlab_root_password
+    volumes:
+      - gitlab_conf:/etc/gitlab
+      - gitlab_data:/var/opt/gitlab
+      - gitlab_logs:/var/log/gitlab
+  gitlab-runner:
+    image: gitlab/gitlab-runner:v13.7.0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./config/runner:/etc/gitlab-runner
+    deploy:
+      mode: replicated
+      replicas: 1
+configs:
+  gitlab:
+    file: ./config/omnibus_config.rb
+secrets:
+  gitlab_root_password:
+    file: ./config/root_password.txt
+volumes:
+  gitlab_conf:
+  gitlab_data:
+  gitlab_logs:
+  postgresql:
+  postgresql_data:
+  sonarqube_bundled-plugins:
+  sonarqube_conf:
+  sonarqube_data:
+  sonarqube_extensions:

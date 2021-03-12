@@ -1,0 +1,26 @@
+{
+    "name": "linkbynet/demo-php-code-quality-testing-sonar-gitlab-ci",
+    "description": "Code quality testing with SonarQube and Gitlab CI for PHP applications",
+    "authors": [
+        {
+            "name": "Nicolas Tournier",
+            "email": "n.tournier@linkbynet.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.3"  
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "LBN\\Demo\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "LBN\\Tests\\": "tests/"
+        }
+    }
+}
